@@ -1,0 +1,22 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+' uncomment the following line and comment the first to use locally
+' !include C4_Component.puml
+
+
+title Architecture Ansible
+
+Person(operator, "Operateur")
+
+Container(controler, "Controleur", "Ansible", "PC/Server ayant le code Ansible")
+
+System_Boundary(hosts, "Managed hosts") {
+    Container(host1, "Host 1", "Ansible managed host")
+    Container(host2, "Host 2", "Ansible managed host")
+    Container(host3, "Host 3", "Ansible managed host")
+    Container(host4, "Host 4", "Ansible managed host")
+}
+
+Rel(operator,controler, "Execute ansible")
+Rel_R(controler, hosts, "Deploiement", "ssh")
+@enduml
