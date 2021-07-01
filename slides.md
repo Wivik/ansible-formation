@@ -331,9 +331,6 @@ mon_nouveau_role/
 ├── files
 ├── handlers
 │   └── main.yml
-├── meta
-│   └── main.yml
-├── README.md
 (...)
 ```
 
@@ -756,7 +753,6 @@ tasks:
     - *tags* : Associe un ou plusieurs tags à une tâche pour les cibler ou les exclure d'une exécution
     - *ignore_errors* : Ignorer les éventuelles erreurs de la tâche
     - *changed_when* / *failed_when* : Conditionner le changement d'état de la tâche
-    - *environment* : Passer des variables d'environnement à la tâche
     - ...
 
 --
@@ -1060,7 +1056,7 @@ Dans roles/webserver/tasks/main.yml :
 
 💡
 
-Notez que le rôle ne commence pas par l'instruction `hosts`, no `tasks`.
+Notez que le rôle ne commence pas par l'instruction `hosts`, ni `tasks`.
 
 Ces instructions sont uniquement pour le playbook qui importera le rôle.
 
@@ -1164,4 +1160,219 @@ Un rôle ne sera exécuté qu'une seule fois par Ansible.
 Si un playbook liste plusieurs fois le rôle, les autres occurrences seront ignorées à moins d'utiliser `_duplicates: true` dans `meti/main.yml`
 
 La réexécution est permise si les variables ou paramètres passés aux rôles ont changé par rapport à la précédente.
+
+--
+
+### Les dépendances de rôles
+
+- Le but d'un rôle est d'être réutilisable et le plus spécialisé possible
+- Ansible recommande l'approche *keep it simple* pour le développement de ceux-ci
+- On peut donner des dépendances à un rôle Ansible
+- Cela signifie que le rôle exécutera au préalable ceux indiqués comme étant une dépendance
+
+--
+
+### Déclarer une dépendance
+
+- Dans le fichier `roles/webserver/meta/main.yml`, renseigner le champ `dependencies`
+
+```yaml
+dependencies:
+  - role: common
+```
+
+- A l'exécution, le rôle webserver appelera common en prérequis
+
+---
+
+## Les rôles Ansible - Récap
+
+- Les rôles sont un code Ansible réutilisable réparti dans un ensemble de fichiers normé
+- L'exécution est enrichie est contextualisée par les variables d'inventaire ou de hosts
+- Ils sont lancés via des playbooks et peuvent être enchaînés
+
+--
+
+![questions](/images/questions.jpg)
+
+---
+
+# Bonnes pratiques, conseils, et compléments
+
+- Quelques bonnes pratiques
+- Ansible Lint pour contrôler son code
+- Mitogen pour accélérer Ansible
+- AWX / Tower
+
+---
+
+## Quelques bonnes pratiques
+
+- La [documentation officielle](https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html) d'Ansible regroupe un certain nombre de conseils utiles
+- Nous allons en voir quelques uns
+
+--
+
+### Organisation de l'arborescence
+
+- Ansible recommande deux versions, mais cette-ci est la plus efficace pour distinguer les inventaires et séparer dev/preprod/prod
+
+```bash
+./
+    inventories/
+        production/
+            hosts/
+            group_vars/
+                group.yml
+        dev/
+            hosts/
+            group_vars/
+                group.yml
+    playbook1.yml
+    roles/
+        role1/
+        role2/
+```
+
+--
+
+### Gérer des actions post avec les handlers
+
+- Lorsqu'une tâche doit se déclencher suite au changement d'une précédente, Ansible recommande l'usage des handlers
+- Il est possible de tester l'état d'une précédente tâche pour conditionner l'exécution d'une autre, mais cette pratique n'est pas recommandée
+- Si besoin de créer un ensemble de tâches cohérentes entre elles, pensez aux `blocks` !
+
+--
+
+### Les rôles sont réutilisables, les playbooks jetables
+
+- Coder un playbook complet avec variables et handlers pour usage récurrent n'est pas idéal, c'est le but des rôles
+- Idéalement, le playbook ne devrait qu'exécuter des rôles
+- Pour un besoin ponctuel, le playbook est adapté
+- Pensez réutilisabilité !
+
+--
+
+### Organiser son inventaire et grouper
+
+- Avant de se lancer dans le code Ansible, il est indispensable de comprendre comment est organisé son infrastructure et comment on compte déployer dessus.
+- Pouvoir cibler des groupes précis de hosts permet de mieux séparer les actions et maitriser ce qu'on fait sans avoir à trop toucher au code
+
+--
+
+### Assurez-vous de la compatibilité OS
+
+- Utilisez le module `assert` pour vérifier avant exécution que votre code tourne sur un OS validé
+- Certains modules sont spécifiques à une famille de distribution Linux (yum versus apt)
+- De même que certains paquets peuvent être nommés différemment entre Red Hat et Debian (httpd versus apache2)
+
+--
+
+### Toujours nommer ses tâches
+
+- L'instruction `name` est indispensable pour s'y retrouver !
+- Ansible considère l'absence de nommage comme étant une anomalie depuis quelques versions
+
+--
+
+### Keep it simple !
+
+- Assurez-vous d'avoir un code facile à maintenir
+- Chercher à faire compliqué c'est aller à l'encontre des principes de simplicité d'Ansible
+
+--
+
+### Ne pas penser shell
+
+- Ansible dispose d'un important panel de modules spécialisés
+- Il y en aura forcément un pour répondre à un besoin, n'utilisez des tâches `shell` ou `command` qu'en ultime recours
+    - Utiliser une tâche shell implique de devoir gérer son idempotence
+
+--
+
+### Versionner le code
+
+- Le code Ansible n'est qu'un ensemble de fichier texte
+- Il est recommandé de le gérer via un gestionnaire de sources tel que Git
+- Associé à une automatisation, Ansible permet de faire du *GitOps*
+
+--
+
+### Respecter l'idempotence
+
+- Ansible ne doit afficher *changed* que s'il y a un changement
+- Une tâche shell provoque un changement systématique, même pour lire un fichier
+- A vous de maîtriser les actions réalisées par Ansible quand vous utilisez du code arbitraire qu'il ne maitrise pas
+    - (changed_when, etc)
+
+--
+
+### Nommage des templates et fichiers déposés
+
+- Nommez vos templates avec le path absolu dans lequel ils seront déployés
+- Vous retrouvez l'info a premier coup d'oeil
+    - `/etc/httpd/conf/httpd.conf`
+    - `etc_http_conf_httpd.conf.j2`
+
+---
+
+## Ansible Lint pour contrôler son code
+
+- Ansible Lint est un outil complémentaire proposé par Ansible Galaxy
+- Il permet de contrôler la qualité du code et fait des propositions d'amélioration
+- Il peut être utilisé en étape pre-commit de Git
+
+[Documentation Ansible Lint](https://docs.ansible.com/ansible-lint/index.html)
+
+---
+
+## Mitogen pour accélérer Ansible
+
+- [Mitogen](https://mitogen.networkgenomics.com/ansible_detailed.html) est une bibliothèque Python conçue pour optimiser les programmes auto répliqués
+- Elle optimise l'utilisation CPU et bande passante et accélère considérablement les déploiements
+- Exemple : plutôt que de déposer un template sur disque, puis le copier en l'enrichissant, Mitogen le fera le RAM
+
+---
+
+## AWX, Ansible Tower
+
+- Tower est une interface graphique web pour Ansible
+- C'est un gestionnaire de workflows qui peut créer des pipelines de déploiement en liant des playbooks Ansible avec des conditions
+- Il permet de déclencher des jobs planfiés disposant de paramètres d'entrées et notifier des états
+
+--
+
+- Ansible Tower est un produit commercial de Red Hat
+- AWX est son pendant communautaire gratuit
+
+![tower](images/ansible_tower.png)
+
+---
+
+![questions](/images/questions.jpg)
+
+---
+
+Fin de la formation Introduction à Ansible
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
