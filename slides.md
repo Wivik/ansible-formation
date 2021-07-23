@@ -149,7 +149,7 @@ La configuration Ansible se fait au moyen d'un fichier `ansible.cfg` chargé sel
 1. variable d’environnement `ANSIBLE_CONFIG` avec l’emplacement du fichier
 2. `ansible.cfg` dans le répertoire courant où est exécuté la commande ansible
 3. `~/.ansible.cfg` depuis le répertoire home
-4 `/etc/ansible/ansible.cfg`
+4. `/etc/ansible/ansible.cfg`
 
 --
 
@@ -1157,7 +1157,7 @@ Au même niveau que le dossier `roles/` créer :
 
 Un rôle ne sera exécuté qu'une seule fois par Ansible. 
 
-Si un playbook liste plusieurs fois le rôle, les autres occurrences seront ignorées à moins d'utiliser `_duplicates: true` dans `meti/main.yml`
+Si un playbook liste plusieurs fois le rôle, les autres occurrences seront ignorées à moins d'utiliser `duplicates: true` dans `meta/main.yml`
 
 La réexécution est permise si les variables ou paramètres passés aux rôles ont changé par rapport à la précédente.
 
