@@ -805,7 +805,7 @@ handlers:
 - Le playbook est le script Ansible à proprement parler
 - Il est un ensemble de tâches, variables, et handlers
 - Il commence toujours par l'instruction `hosts`, puis `tasks`
-- Il peut déclencher des tâches dur événement avec les Handlers
+- Il peut déclencher des tâches sur événement avec les Handlers
 - On peut agréger des playbooks en un seul via la commande `import_playbook`
 
 --
